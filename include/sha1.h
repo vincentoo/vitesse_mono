@@ -1,12 +1,19 @@
 /*=================================================
-**Discription	:
-**Author		: 	vincenzo
+**Discription		:
+**Author			: 	vincenzo
 **Date			: 	2015.9.15 0:28
 **File			: 	sha1.h
 **=================================================
 */
 #ifndef _SHA1_H_
 #define _SHA1_H_
+
+#include "hal.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 typedef struct _SHA1Context{
 	unsigned int Message_Digest[5];      
@@ -192,7 +199,7 @@ static int sha1(const char *source, char *lrvar){
 	char buf[128];
 	
 	if (NULL == source || NULL == lrvar){
-		debug_print("SHA1 ERROR: args is NULL\n");
+		mono_debug("SHA1 ERROR: args is NULL\n");
 		return -1;
 	}
 
@@ -200,10 +207,10 @@ static int sha1(const char *source, char *lrvar){
 	SHA1Input(&sha, source, strlen(source));
 
 	if (!SHA1Result(&sha)){
-		debug_print("SHA1 ERROR: Could not compute message digest\n");
+		mono_debug("SHA1 ERROR: Could not compute message digest\n");
 		return -1;
 	} else {
-		memset((void *)buf, 0,sizeof(buf));
+		MEMSET((void *)buf, 0,sizeof(buf));
 		sprintf(buf, "%08X%08X%08X%08X%08X", 
 			sha.Message_Digest[0],
 			sha.Message_Digest[1],
@@ -211,11 +218,16 @@ static int sha1(const char *source, char *lrvar){
 			sha.Message_Digest[3],
 			sha.Message_Digest[4]);
 		
-		memcpy((void *) lrvar, (void *) buf, strlen(buf));
+		MEMCPY((void *) lrvar, (void *) buf, strlen(buf));
 		return strlen(buf);
 	}
 	
 	return -1;
 }
 
+
+#ifdef __cplusplus
+}
 #endif
+#endif
+
