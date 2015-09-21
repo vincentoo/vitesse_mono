@@ -8,7 +8,7 @@ export TOPDIR := $(PWD)
 
 include config.mk
 
-TARGET := testd
+TARGET := monod
 
 COBJS = $(patsubst %.c,%.o,$(wildcard *.c))
 

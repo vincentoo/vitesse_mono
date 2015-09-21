@@ -1,7 +1,8 @@
 /*=================================================
 **Discription		:
 **Author			: 	vincenzo
-**Date			: 	2015.9.15 0:28
+**Email                  :      <liyulinga@qq.com>
+**Date			: 	2015.9.20 9:28
 **File			: 	sha1.h
 **=================================================
 */
@@ -222,7 +223,7 @@ static int sha1(const char *source, char *lrvar){
 		return strlen(buf);
 	}
 	
-	return -1;
+	return 0;
 }
 
 

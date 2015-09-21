@@ -1,10 +1,12 @@
 /*===================================================
 **Discription		:
 **Author			: 	vincenzo
-**Date			: 	2015.9.15 0:28
+**Email                  :      <liyulinga@qq.com>
+**Date			: 	2015.9.20 9:28
 **File			: 	debug.c
 **===================================================
 */
+#include <stdarg.h>
 
 void mono_info(const char *fmt, ...)
 {

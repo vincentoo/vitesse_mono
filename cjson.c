@@ -81,6 +81,7 @@ static cJSON *cJSON_New_Item(void)
 void cJSON_Delete(cJSON *c)
 {
 	cJSON *next;
+
 	while (c)
 	{
 		next=c->next;
