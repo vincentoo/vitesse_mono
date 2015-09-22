@@ -47,80 +47,6 @@ static void random_chars(char *buf, uint32_t len)
     }
 }
 
-#if 0
-static unsigned char char_to_hex( unsigned char x ) 
-{ 
-    return (unsigned char)(x > 9 ? x + 55: x + 48); 
-} 
-
-static int is_alpha_number_char( unsigned char c ) 
-{ 
-    if ( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ) 
-        return 1; 
-    return 0; 
-} 
-
-void urlencode( unsigned char * src, int  src_len, unsigned char * dest, int  dest_len ) 
-{ 
-    unsigned char ch; 
-    int  len = 0; 
-
-    while (len < (dest_len - 4) && *src) 
-    { 
-        ch = (unsigned char)*src; 
-        if (*src == ' ') 
-        { 
-            *dest++ = '+'; 
-        } 
-        else if (is_alpha_number_char(ch) || strchr("-_.!~*'()", ch)) 
-        { 
-            *dest++ = *src; 
-        } 
-        else 
-        { 
-            *dest++ = '%'; 
-            *dest++ = '%';
-            *dest++ = char_to_hex( (unsigned char)(ch >> 4) ); 
-            *dest++ = char_to_hex( (unsigned char)(ch % 16) ); 
-        }  
-        ++src; 
-        ++len; 
-    } 
-    *dest = 0; 
-    return ; 
-} 
-
-unsigned char* urldecode(unsigned char* encd,unsigned char* decd) 
-{ 
-    int j,i; 
-    char *cd = encd; 
-    char p[2]; 
-    unsigned int num; 
-     j=0; 
-
-    for( i = 0; i < strlen(cd); i++ ) 
-    { 
-        memset( p, '/0', 2 ); 
-        if( cd[i] != '%' ) 
-        { 
-            decd[j++] = cd[i]; 
-            continue; 
-        } 
-
-        p[0] = cd[++i]; 
-        p[1] = cd[++i]; 
-
-        p[0] = p[0] - 48 - ((p[0] >= 'A') ? 7 : 0) - ((p[0] >= 'a') ? 32 : 0); 
-        p[1] = p[1] - 48 - ((p[1] >= 'A') ? 7 : 0) - ((p[1] >= 'a') ? 32 : 0); 
-        decd[j++] = (unsigned char)(p[0] * 16 + p[1]); 
-
-    } 
-    decd[j] = '/0'; 
-
-    return decd; 
-} 
- #endif
-
  void mono_dump_hex(const char *buf, int len)
 {
     int i;
@@ -189,6 +115,52 @@ void mono_socket_init(void)
 
 }
 
+char *mono_urlencode(const char *s, int len, int *new_length)
+{
+	#define safe_emalloc(nmemb, size, offset)	MALLOC((nmemb) * (size) + (offset))
+	static unsigned char hexchars[] = "0123456789ABCDEF";
+	register unsigned char c;
+	unsigned char *to, *start;
+	unsigned char const *from, *end;
+	
+	from = (unsigned char *)s;
+	end = (unsigned char *)s + len;
+	start = to = (unsigned char *) safe_emalloc(3, len, 1);
+
+	while (from < end) {
+		c = *from++;
+
+		if (c == ' ') {
+			*to++ = '+';
+#ifndef CHARSET_EBCDIC
+		} else if ((c < '0' && c != '-' && c != '.') ||
+				   (c < 'A' && c > '9') ||
+				   (c > 'Z' && c < 'a' && c != '_') ||
+				   (c > 'z')) {
+			to[0] = '%';
+			to[1] = hexchars[c >> 4];
+			to[2] = hexchars[c & 15];
+			to += 3;
+#else /*CHARSET_EBCDIC*/
+		} else if (!isalnum(c) && strchr("_-.", c) == NULL) {
+			/* Allow only alphanumeric chars and '_', '-', '.'; escape the rest */
+			to[0] = '%';
+			to[1] = hexchars[os_toascii[c] >> 4];
+			to[2] = hexchars[os_toascii[c] & 15];
+			to += 3;
+#endif /*CHARSET_EBCDIC*/
+		} else {
+			*to++ = c;
+		}
+	}
+	*to = 0;
+	if (new_length) {
+		*new_length = to - start;
+	}
+	return (char *) start;
+}
+
+
 
 void mono_http_send(void)
 {
@@ -216,7 +188,7 @@ void mono_http_send(void)
         sha1(header, sha);
 
         MEMSET(header, 0, BUFSIZE);
-        sprintf(header,"GET /testpoe/em/poeem.ashx?timestamp=%d&nonce=%c%c%c%c%c&data=%%7b%%22type%%22%%3a%%22PING%%22%%2c%%22gw_id%%22%%3a%%2270%%3a3A%%3a+D8%%3a+00%%3a22%%3a48%%22%%7d&signature=%s  HTTP/1.1\r\n",
+        sprintf(header,"GET /testpoe/em/poeem.ashx?timestamp=%d&nonce=%c%c%c%c%c&data=%%7b%%22type%%22%%3a%%22PING%%22%%2c%%22gw_id%%22%%3a%%2270%%3a3A%%3aD8%%3a00%%3a22%%3a48%%22%%7d&signature=%s  HTTP/1.1\r\n",
             time1, rand[0], rand[1],rand[2],rand[3],rand[4], sha);
         strcat(header,"Accept: text/html, application/xhtml+xml, image/jxr, */*\r\n"); 
         strcat(header,"Accept-Language: en-US,en;q=0.8,zh-Hans-CN;q=0.5,zh-Hans;q=0.3\r\n"); 
@@ -258,7 +230,14 @@ void mono_http_recv(void)
             continue;
         }
 
+        mono_debug("Receive buf: \n%s\n\n\n",recv_buf);
+
         pjson = strchr(recv_buf, '{');
+
+        if (NULL == pjson)
+        {
+            continue;
+        }
 
         mono_debug("Receive json: %s\n",pjson);
 
