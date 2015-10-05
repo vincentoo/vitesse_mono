@@ -15,13 +15,14 @@ COBJS = $(patsubst %.c,%.o,$(wildcard *.c))
 all:$(COBJS)
 	$(CC) $(CFLAGS) $(LIBS) $(LDFLAGS) *.o -o $(TARGET)
 
-%.dep : %.c
+%.d : %.c
 	$(CC) -MM $(CFLAGS) $< > $@
--include $(COBJS:.o=.dep)
+-include $(COBJS:.o=.d)
 
 clean:
 	@$(RM) *.o $(TARGET)
 
 distclean:
 	@$(RM) *.o $(TARGET)
-	@$(RM) *.dep
+	@$(RM) *.d
+
